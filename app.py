@@ -797,20 +797,57 @@ def new_audit_plan():
             month=int(f['month']) if f.get('month') else None,
             department_id=int(f['department_id']),
             audit_type=f['audit_type'],
-            frequency=f['frequency'],
-            responsible_manager=f['responsible_manager'],
+            frequency=f.get('frequency', 'Annual'),
+            responsible_manager=f.get('responsible_manager', ''),
+            auditor_name=f.get('auditor_name', ''),
+            planned_week=int(f['planned_week']) if f.get('planned_week') else None,
             scope=f.get('scope', ''),
             objectives=f.get('objectives', ''),
             iosa_reference=f.get('iosa_reference', ''),
-            status='Active'
+            status='Planned'
         )
         db.session.add(p)
         db.session.commit()
-        flash(f'✓ Audit Plan {pid} created for {f["year"]}.', 'success')
-        return redirect(url_for('audit_plans'))
+        flash(f'✓ Audit Plan {pid} saved — {p.audit_type} for {f["year"]}.', 'success')
+        return redirect(url_for('audit_plans') + f'?year={f["year"]}')
     years = list(range(datetime.now().year, datetime.now().year + 3))
     return render_template('audit/audit_plan_form.html', years=years)
 
+
+@app.route('/audit-plans/<pid>/edit', methods=['GET','POST'])
+def edit_audit_plan(pid):
+    p = AuditPlan.query.get_or_404(pid)
+    if request.method == 'POST':
+        f = request.form
+        p.year               = int(f['year'])
+        p.month              = int(f['month']) if f.get('month') else None
+        p.department_id      = int(f['department_id'])
+        p.audit_type         = f['audit_type']
+        p.frequency          = f.get('frequency', p.frequency)
+        p.responsible_manager = f.get('responsible_manager', p.responsible_manager)
+        p.auditor_name       = f.get('auditor_name', p.auditor_name)
+        p.planned_week       = int(f['planned_week']) if f.get('planned_week') else None
+        p.scope              = f.get('scope', p.scope)
+        p.objectives         = f.get('objectives', p.objectives)
+        p.iosa_reference     = f.get('iosa_reference', p.iosa_reference)
+        p.status             = f.get('status', p.status)
+        db.session.commit()
+        flash(f'✓ Audit Plan {p.id} updated.', 'success')
+        return redirect(url_for('audit_plans') + f'?year={p.year}')
+    years = list(range(datetime.now().year, datetime.now().year + 3))
+    return render_template('audit/audit_plan_form.html', years=years, edit=p)
+
+@app.route('/audit-plans/<pid>/delete', methods=['POST'])
+def delete_audit_plan(pid):
+    p = AuditPlan.query.get_or_404(pid)
+    year = p.year
+    # Remove linked schedules first
+    for s in p.schedules:
+        db.session.delete(s)
+    db.session.delete(p)
+    db.session.commit()
+    flash(f'✓ Audit Plan {pid} deleted.', 'success')
+    return redirect(url_for('audit_plans') + f'?year={year}')
 
 @app.route('/audit-plans/<pid>/complete', methods=['POST'])
 def complete_audit_plan(pid):
