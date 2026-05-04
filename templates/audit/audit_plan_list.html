@@ -151,9 +151,10 @@
           <th>Scope</th>
           <th>Frequency</th>
           <th>IOSA Ref</th>
-          <th>Responsible</th>
+          <th>Auditor</th>
+          <th>Week</th>
           <th>Status</th>
-          <th style="width:120px">Actions</th>
+          <th style="width:130px">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -209,8 +210,13 @@
             {{ p.iosa_reference or '—' }}
           </td>
 
-          <!-- Responsible -->
-          <td style="font-size:12px">{{ p.responsible_manager or '—' }}</td>
+          <!-- Auditor -->
+          <td style="font-size:12px">{{ p.auditor_name or p.responsible_manager or '—' }}</td>
+
+          <!-- Week -->
+          <td style="font-size:11px;color:var(--muted);text-align:center">
+            {% if p.planned_week %}W{{ p.planned_week }}{% else %}—{% endif %}
+          </td>
 
           <!-- Status -->
           <td>
@@ -234,44 +240,60 @@
           <!-- Actions -->
           <td>
             <div style="display:flex;flex-direction:column;gap:5px">
-              <!-- Schedule button — opens mini form -->
-              {% if p.status != 'Completed' %}
-              <details>
-                <summary class="btn btn-nav btn-sm"
-                         style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px">
+
+              <!-- Edit -->
+              <a href="/audit-plans/{{ p.id }}/edit"
+                 class="btn btn-outline btn-sm"
+                 style="font-size:11px;padding:4px 10px">✏ Edit</a>
+
+              <!-- Schedule — mini inline form -->
+              {% if p.status != 'Completed' and p.status != 'Cancelled' %}
+              <details style="position:relative">
+                <summary style="cursor:pointer;list-style:none;font-size:11px;font-weight:700;
+                                padding:4px 10px;border-radius:6px;background:var(--navy);color:#fff;
+                                display:inline-flex;align-items:center;gap:4px">
                   ▶ Schedule
                 </summary>
-                <div style="position:absolute;background:#fff;border:1.5px solid var(--border);
-                            border-radius:8px;padding:14px;box-shadow:0 4px 20px rgba(0,0,0,.12);
-                            z-index:100;min-width:260px;margin-top:4px">
+                <div style="position:absolute;left:0;background:#fff;border:1.5px solid var(--border);
+                            border-radius:8px;padding:14px;box-shadow:0 4px 20px rgba(0,0,0,.15);
+                            z-index:200;min-width:250px;margin-top:4px">
+                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+                    Create Live Audit from Plan
+                  </div>
                   <form method="POST" action="/audit-plans/{{ p.id }}/schedule">
-                    <div class="fg" style="margin-bottom:8px">
-                      <label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Date *</label>
-                      <input type="date" name="scheduled_date" required
-                             style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit"/>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <div>
+                        <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px">Audit Date *</label>
+                        <input type="date" name="scheduled_date" required
+                               style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit"/>
+                      </div>
+                      <div>
+                        <label style="font-size:10px;font-weight:700;color:var(--muted);display:block;margin-bottom:2px">Lead Auditor *</label>
+                        <input type="text" name="lead_auditor" required
+                               value="{{ p.auditor_name or '' }}"
+                               placeholder="Name"
+                               style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit"/>
+                      </div>
+                      <button type="submit" class="btn btn-nav btn-sm" style="width:100%">
+                        Create Audit →
+                      </button>
                     </div>
-                    <div class="fg" style="margin-bottom:10px">
-                      <label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">Lead Auditor *</label>
-                      <input type="text" name="lead_auditor" required
-                             placeholder="Name"
-                             style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:6px 9px;font-size:12px;font-family:inherit"/>
-                    </div>
-                    <button type="submit" class="btn btn-nav btn-sm" style="width:100%">Create Audit →</button>
                   </form>
                 </div>
               </details>
               {% endif %}
 
               <!-- Mark complete -->
-              {% if p.status != 'Completed' %}
+              {% if p.status not in ['Completed','Cancelled'] %}
               <form method="POST" action="/audit-plans/{{ p.id }}/complete">
-                <button type="submit" class="btn btn-outline btn-sm"
-                        style="font-size:10px;padding:3px 8px;color:#15803d;border-color:#bbf7d0"
-                        onclick="return confirm('Mark this audit plan as Completed?')">
+                <button type="submit"
+                        style="font-size:10px;padding:3px 8px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:5px;cursor:pointer;font-family:inherit;font-weight:700"
+                        onclick="return confirm('Mark as Completed?')">
                   ✓ Complete
                 </button>
               </form>
               {% endif %}
+
             </div>
           </td>
         </tr>
